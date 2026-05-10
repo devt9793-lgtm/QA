@@ -15,7 +15,7 @@ function mkToken()  { return crypto.randomBytes(32).toString('hex'); }
 async function readUsers() {
   try {
     // List blobs to find users.json URL (works reliably with public store)
-    const { blobs } = await list({ token: process.env.BLOB_READ_WRITE_TOKEN, prefix: BLOB_KEY });
+    const { blobs } = await list({ token: process.env.qaauth_READ_WRITE_TOKEN, prefix: BLOB_KEY });
     if (!blobs || blobs.length === 0) return [];
     // Fetch the latest blob by URL (public — no auth header needed)
     const url = blobs[0].downloadUrl || blobs[0].url;
@@ -33,7 +33,7 @@ async function writeUsers(users) {
     access:           'public',
     contentType:      'application/json',
     addRandomSuffix:  false,
-    token:            process.env.BLOB_READ_WRITE_TOKEN,
+    token:            process.env.qaauth_READ_WRITE_TOKEN,
   });
 }
 
@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   // Debug — log token presence (never log the actual token)
-  console.log('[auth] BLOB token present:', !!process.env.BLOB_READ_WRITE_TOKEN);
+  console.log('[auth] BLOB token present:', !!process.env.qaauth_READ_WRITE_TOKEN);
 
   const action = req.query.action || (req.body && req.body.action) || '';
   const body   = req.body || {};
@@ -59,7 +59,7 @@ module.exports = async function handler(req, res) {
     if (action === 'verify')   return await doVerify(req, res);
     if (action === 'logout')   return await doLogout(req, body, res);
     if (action === 'list')     return await doList(req, res);
-    if (action === 'ping')     return res.status(200).json({ ok: true, token: !!process.env.BLOB_READ_WRITE_TOKEN });
+    if (action === 'ping')     return res.status(200).json({ ok: true, token: !!process.env.qaauth_READ_WRITE_TOKEN });
     return res.status(400).json({ error: 'Unknown action: ' + action });
   } catch (e) {
     console.error('[auth]', e);
