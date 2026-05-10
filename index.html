@@ -226,7 +226,7 @@ tr.ticked .item-txt{text-decoration:line-through;color:var(--txt2)}
         <div class="uav" id="top-av">?</div>
         <span class="uname" id="top-uname">Set name</span>
       </div>
-      <button class="tb-btn excel" onclick="downloadExcel()">📊 Download .xlsx</button>
+      <button class="tb-btn excel" onclick="openInDrive()">📂 Open Sheet</button>
       <button class="tb-btn" onclick="openInDrive()">📂 Drive</button>
       <button class="tb-btn" onclick="openSettingsModal()" title="API Settings">⚙</button>
       <button class="tb-btn danger" onclick="confirmReset()">Reset</button>
@@ -264,10 +264,13 @@ tr.ticked .item-txt{text-decoration:line-through;color:var(--txt2)}
   <!-- SETTINGS MODAL -->
   <div class="ov" id="sm">
     <div class="modal">
-      <h3>⚙ API Settings</h3>
-      <p>Update your Google Apps Script Web App URL. Saved in browser, used for all API calls.</p>
+      <h3>⚙ Connect to Google Drive</h3>
+      <p>Paste your Google Apps Script Web App URL below. This connects the QA tool to your Drive folder where project Excel files are stored.</p>
       <input class="minput" id="sm-url" placeholder="https://script.google.com/macros/s/…/exec">
-      <div class="hint">Get this from Apps Script → Deploy → Manage Deployments → copy the Web App URL.<br>Works from any device or when opening this file locally from your desktop.</div>
+      <div class="hint">
+        Get this from: <strong>Apps Script → Deploy → Manage Deployments → copy Web App URL</strong><br>
+        Saved in your browser — works on any device or when opening locally from desktop.
+      </div>
       <div class="mactions">
         <button class="mbtn cancel" onclick="closeSettingsModal()">Cancel</button>
         <button class="mbtn ok" onclick="saveSettingsUrl()">Save & reconnect</button>
@@ -288,7 +291,7 @@ tr.ticked .item-txt{text-decoration:line-through;color:var(--txt2)}
       </div>
       <div class="pp-sub">Each project creates a real Excel file in your Google Drive folder. Open or download from any device, share with anyone.</div>
       <div class="pp-row">
-        <input class="pp-input" id="proj-input" placeholder="New project name (e.g. Example, Example.com)…" maxlength="60" onkeydown="if(event.key==='Enter')startProject()">
+        <input class="pp-input" id="proj-input" placeholder="New project name (e.g. Intuition SOF Tech)…" maxlength="60" onkeydown="if(event.key==='Enter')startProject()">
         <button class="pp-btn" onclick="startProject()">Create Project →</button>
       </div>
       <div class="chips-wrap" id="chips-wrap">
@@ -302,7 +305,7 @@ tr.ticked .item-txt{text-decoration:line-through;color:var(--txt2)}
       <span class="sb-label">📊 <strong id="sb-name">—</strong>.xlsx</span>
       <span id="sb-ind"></span>
       <button class="sb-btn" onclick="loadProjectData(projectName,false)">↻ Refresh</button>
-      <button class="sb-btn excel" onclick="downloadExcel()">⬇ Download Excel</button>
+      <button class="sb-btn excel" onclick="openInDrive()">📂 Open Sheet</button>
       <button class="sb-btn green" onclick="openInDrive()">📂 Open in Drive</button>
     </div>
 
@@ -347,13 +350,13 @@ tr.ticked .item-txt{text-decoration:line-through;color:var(--txt2)}
       <div class="xl-left">
         <div class="xl-icon">📊</div>
         <div>
-          <div class="xl-title">Excel file in Google Drive</div>
-          <div class="xl-sub" id="xl-sub">This project's data is stored as a real .xlsx file</div>
+          <div class="xl-title">Google Sheet in Drive</div>
+          <div class="xl-sub" id="xl-sub">This project's state is stored in a Google Sheet</div>
         </div>
       </div>
       <div class="xl-actions">
-        <button class="xl-btn view" onclick="openInDrive()">📂 View in Drive</button>
-        <button class="xl-btn download" onclick="downloadExcel()">⬇ Download .xlsx</button>
+        <button class="xl-btn view" onclick="openInDrive()">📂 Open Sheet</button>
+        <button class="xl-btn download" onclick="openInDrive()">🔗 View in Drive</button>
       </div>
     </div>
 
@@ -369,14 +372,14 @@ tr.ticked .item-txt{text-decoration:line-through;color:var(--txt2)}
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// ► STEP 1 — PASTE YOUR APPS SCRIPT WEB APP URL BELOW
-//   Replace the placeholder with your actual deployed URL.
-//   You can also change it at runtime via the ⚙ button (top bar).
+// ► OPTIONAL: paste your Apps Script Web App URL here to hardcode it.
+//   If left as-is, users configure it via the ⚙ button on first visit.
+//   localStorage always wins over this value.
 // ═══════════════════════════════════════════════════════════════
-const HARDCODED_API_URL = 'https://script.google.com/macros/s/AKfycbzzcZh89taEio4KMEtvrGt81Jf67-HE8FcR1b_SfeU9M6jkYAAOFrEUjJvqijiENfCk/exec';
+const HARDCODED_API_URL = 'https://script.google.com/macros/s/AKfycbzzcZh89taEio4KMEtvrGt81Jf67-HE8FcR1b_SfeU9M6jkYAAOFrEUjJvqijiENfCk/exec';  // e.g. 'https://script.google.com/macros/s/ABC.../exec'
 
-// ── Runtime URL: localStorage override wins, then hardcoded fallback ──
-let API_URL = localStorage.getItem('qa7_api_url') || HARDCODED_API_URL;
+// ── Runtime URL: localStorage wins, then hardcoded, then empty ──
+let API_URL = localStorage.getItem('qa7_api_url') || HARDCODED_API_URL || '';
 
 // ── Environment detection ──
 const IS_LOCAL = location.protocol === 'file:';
@@ -399,13 +402,19 @@ let projectFileId='';
 let pollTimer=null;
 let apiOk=false;
 
+function isValidUrl(u){ return u && u.includes('script.google.com'); }
+
 function init(){
   loadUser();
-  if(!API_URL || API_URL.includes('YOUR_DEPLOYMENT_ID_HERE')){
-    showApiWarn('⚙ API URL not set — click "Change API URL" to configure it.');
+  if(!isValidUrl(API_URL)){
+    // No URL configured — show warning and auto-open settings modal
     setSyncState('offline');
     document.getElementById('chips-loading').style.display='none';
-    document.getElementById('chips-wrap').innerHTML='<span class="chips-label">All projects</span><span style="font-size:12px;color:var(--txt3)">Configure API URL first via ⚙</span>';
+    document.getElementById('chips-wrap').innerHTML=
+      '<span class="chips-label">All projects</span>'+
+      '<span style="font-size:12px;color:var(--txt3)">Paste your API URL to get started</span>';
+    showApiWarn('⚙ First time? Paste your Apps Script Web App URL below to connect.');
+    setTimeout(openSettingsModal, 350);
     return;
   }
   loadProjectList();
@@ -415,14 +424,14 @@ function init(){
 
 // ── Settings modal ──
 function openSettingsModal(){
-  document.getElementById('sm-url').value=API_URL.includes('YOUR_DEPLOYMENT_ID_HERE')?'':API_URL;
+  document.getElementById('sm-url').value=isValidUrl(API_URL)?API_URL:'';
   document.getElementById('sm').classList.add('show');
   setTimeout(()=>document.getElementById('sm-url').focus(),120);
 }
 function closeSettingsModal(){document.getElementById('sm').classList.remove('show');}
 function saveSettingsUrl(){
   const url=(document.getElementById('sm-url').value||'').trim();
-  if(!url||!url.includes('script.google.com')){toast('⚠ Please paste a valid Apps Script Web App URL');return;}
+  if(!isValidUrl(url)){toast('⚠ Please paste a valid Apps Script Web App URL');return;}
   API_URL=url;
   localStorage.setItem('qa7_api_url',url);
   closeSettingsModal();
@@ -446,6 +455,7 @@ function hideApiWarn(){document.getElementById('api-warn').style.display='none';
 // For GET: try direct first, then allorigins proxy (helps with file:// CORS)
 // For POST: Apps Script sets Access-Control-Allow-Origin:* so direct works from file://
 async function apiGet(params){
+  if(!isValidUrl(API_URL)){ setSyncState('offline'); return null; }
   setSyncState('syncing');
   const qs=new URLSearchParams(params).toString();
   const direct=API_URL+'?'+qs;
@@ -466,6 +476,7 @@ async function apiGet(params){
 }
 
 async function apiPost(body){
+  if(!isValidUrl(API_URL)){ setSyncState('offline'); toast('⚙ Set your API URL first'); return null; }
   setSyncState('syncing');
   try{
     const r=await fetch(API_URL,{
@@ -495,7 +506,7 @@ function setSyncState(s){
 // ── Project list ──
 async function loadProjectList(){
   document.getElementById('chips-loading').style.display='flex';
-  const data=await apiGet({action:'list_projects'});
+  const data=await apiGet({action:'listProjects'});
   document.getElementById('chips-loading').style.display='none';
   if(!data){
     document.getElementById('chips-wrap').innerHTML='<span class="chips-label">All projects</span><span style="font-size:12px;color:var(--txt3)">Could not load — check API via ⚙</span>';
@@ -523,11 +534,11 @@ async function startProject(){
   const name=(document.getElementById('proj-input').value||'').trim();
   if(!name){toast('Enter a project name');return;}
   document.getElementById('proj-input').value='';
-  toast('Creating Excel file for "'+name+'"…');
-  const res=await apiPost({action:'create_project',name});
+  toast('Creating project "'+name+'"…');
+  const res=await apiPost({action:'createProject',project:name});
   if(!res){toast('⚠ Could not create project');return;}
-  projectFileId=res.id||'';
-  toast('📊 Excel file created in Drive!');
+  if(res.alreadyExists) toast('Project already exists — loading it');
+  else toast('✓ Project created in Drive!');
   switchProject(name);
   loadProjectList();
 }
@@ -541,7 +552,7 @@ async function switchProject(name){
   document.getElementById('status-bar').style.display='flex';
   document.getElementById('sb-name').textContent=name;
   document.getElementById('xl-panel').style.display='flex';
-  document.getElementById('xl-sub').textContent='QA_Project_'+name+'.xlsx in your Drive folder';
+  document.getElementById('xl-sub').textContent='QA — '+name+' · Google Sheet in Drive';
   document.querySelectorAll('.proj-chip').forEach(c=>c.classList.toggle('active',c.dataset.proj===name));
   await loadProjectData(name,true);
   startPolling();
@@ -549,29 +560,79 @@ async function switchProject(name){
 
 async function loadProjectData(name,reset){
   setSyncState('syncing');
-  document.getElementById('sb-ind').innerHTML='<span class="sb-pill sb-warn">Loading from Drive…</span>';
-  const data=await apiGet({action:'get_project',name});
+  document.getElementById('sb-ind').innerHTML='<span class="sb-pill sb-warn">Loading…</span>';
+  // First load master checklist for section structure
+  const master=await apiGet({action:'getMaster'});
+  if(!master||!master.csv){
+    document.getElementById('sb-ind').innerHTML='<span class="sb-pill sb-err">⚠ Could not load master checklist</span>';
+    setSyncState('err');return;
+  }
+  sections=parseMasterCsv(master.csv);
+  // Then load project state
+  const data=await apiGet({action:'getProject',project:name});
   if(!data){document.getElementById('sb-ind').innerHTML='<span class="sb-pill sb-err">⚠ Could not reach server</span>';setSyncState('err');return;}
-  if(!data.exists){setTimeout(()=>loadProjectData(name,reset),3000);return;}
-  sections=data.sections||[];shared=data.state||{};activity=data.activity||[];
-  projectFileId=data.id||projectFileId;
+  if(!data.found){
+    // Project doesn't exist yet — create it then load again
+    await apiPost({action:'createProject',project:name});
+    shared={};activity=[];
+  } else {
+    shared=data.state||{};
+    activity=data.activity||[];
+  }
   buildUI();renderAllRows();updateStats();renderActivity();
   document.getElementById('sb-ind').innerHTML='<span class="sb-pill sb-ok">✓ Live from Drive</span>';
   setSyncState('ok');
+}
+
+// Parse CSV from getMaster into sections array
+function parseMasterCsv(csv){
+  const lines=csv.split('\n');
+  if(!lines.length)return[];
+  const headers=parseCsvLine(lines[0]).map(h=>h.trim().toLowerCase());
+  const sectionCol=headers.findIndex(h=>h==='section'||h.includes('dept'));
+  const roleCol=headers.findIndex(h=>h==='role');
+  const itemCol=headers.findIndex(h=>h.includes('checklist')||h==='item');
+  const newCol=headers.findIndex(h=>h==='new item'||h==='isnew'||h==='new');
+  const iconCol=headers.findIndex(h=>h.includes('icon'));
+  const deptMap={};
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    const cols=parseCsvLine(lines[i]);
+    const dept=String(cols[sectionCol]||'General').trim();
+    const item=String(cols[itemCol]||'').trim();
+    if(!item)continue;
+    const role=String(cols[roleCol]||'qa').trim().toLowerCase();
+    const isNew=['yes','true','1','y'].includes(String(cols[newCol]||'').trim().toLowerCase());
+    const icon=String(cols[iconCol]||'📋').trim()||'📋';
+    if(!deptMap[dept])deptMap[dept]={dept,icon,role,items:[]};
+    deptMap[dept].items.push({t:item,isNew});
+  }
+  return Object.values(deptMap);
+}
+function parseCsvLine(line){
+  const result=[];let cur='';let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(c===','&&!inQ){result.push(cur);cur='';}
+    else cur+=c;
+  }
+  result.push(cur);
+  return result;
 }
 
 function startPolling(){
   if(pollTimer)clearInterval(pollTimer);
   pollTimer=setInterval(async()=>{
     if(!projectName)return;
-    const data=await apiGet({action:'get_project',name:projectName});
-    if(!data||!data.exists)return;
+    const data=await apiGet({action:'getProject',project:projectName});
+    if(!data||!data.found)return;
     const remState=data.state||{};
     let changed=false;
     Object.keys(remState).forEach(k=>{
       if(JSON.stringify(remState[k])!==JSON.stringify(shared[k])){shared[k]=remState[k];changed=true;}
     });
-    if(changed){renderAllRows();updateStats();toast('📊 Updated from Drive');}
+    if(changed){renderAllRows();updateStats();toast('🔄 Updated from Drive');}
     const remAct=data.activity||[];
     const remLatest=remAct.length?remAct[0].ts:0;
     const curLatest=activity.length?activity[0].ts:0;
@@ -582,19 +643,21 @@ function startPolling(){
 
 async function downloadExcel(){
   if(!projectName){toast('Select a project first');return;}
-  toast('Getting download link…');
-  const data=await apiGet({action:'export_excel',name:projectName});
-  if(!data||!data.downloadUrl){toast('⚠ Could not get download link');return;}
-  window.open(data.downloadUrl,'_blank');
-  toast('📊 Download started!');
+  // This backend uses Google Sheets — open the sheet in Drive instead
+  openInDrive();
 }
 async function openInDrive(){
-  if(projectFileId){window.open('https://drive.google.com/file/d/'+projectFileId+'/view','_blank');}
-  else if(projectName){
-    const data=await apiGet({action:'export_excel',name:projectName});
-    if(data&&data.viewUrl)window.open(data.viewUrl,'_blank');
-    else toast('Open your Drive folder to find the file');
-  }else{toast('Select a project first');}
+  if(!projectName){toast('Select a project first');return;}
+  // Look up sheetId from registry via listProjects
+  const data=await apiGet({action:'listProjects'});
+  if(data&&data.projects){
+    const p=data.projects.find(x=>x.name===projectName);
+    if(p&&p.sheetId){
+      window.open('https://docs.google.com/spreadsheets/d/'+p.sheetId,'_blank');
+      return;
+    }
+  }
+  toast('Open your Drive folder and look for "QA — '+projectName+'"');
 }
 
 // ── User ──
@@ -718,9 +781,18 @@ async function addInline(si){
   const inp=document.getElementById('ai-'+si);
   const txt=inp.value.trim();if(!txt)return;
   sections[si].items.push({t:txt,isNew:false,custom:true});
-  inp.value='';rebuildUI();openSec(si);toast('Saving to Excel…');
-  const res=await apiPost({action:'add_item',name:projectName,section:sections[si].dept,item:txt});
-  toast(res&&res.added?'✓ Item saved to Excel!':'⚠ Item added locally — check connection');
+  inp.value='';rebuildUI();openSec(si);
+  // Save full state with new key included
+  const newKey='custom_'+Date.now();
+  shared[newKey]={};
+  toast('Saving…');
+  const res=await apiPost({action:'saveAllState',project:projectName,state:shared});
+  if(res){
+    apiPost({action:'logActivity',project:projectName,entry:{msg:currentUser.name+' added "'+txt+'"',type:'custom',ts:Date.now()}});
+    toast('✓ Item saved!');
+  } else {
+    toast('⚠ Item added locally — check connection');
+  }
 }
 
 function renderRow(key){
@@ -753,9 +825,14 @@ async function toggle(key){
   shared[key]=d.done?{done:false}:{done:true,name:currentUser.name,role:currentUser.role,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})};
   renderRow(key);updateStats();
   const m=keyMap.find(k=>k.key===key);
-  logAct((shared[key].done?currentUser.name+' checked':currentUser.name+' unchecked')+' "'+m.text.slice(0,48)+'…"',shared[key].done?'done':'undo');
-  const res=await apiPost({action:'save_state',name:projectName,state:shared,activity});
-  if(!res)toast('⚠ Could not save to Drive — changes are local only');
+  const msg=(shared[key].done?currentUser.name+' checked':currentUser.name+' unchecked')+' "'+m.text.slice(0,48)+'…"';
+  const type=shared[key].done?'done':'undo';
+  logAct(msg,type);
+  // Save full state
+  const res=await apiPost({action:'saveAllState',project:projectName,state:shared});
+  if(!res){toast('⚠ Could not save — changes are local only');return;}
+  // Log activity separately
+  apiPost({action:'logActivity',project:projectName,entry:{msg,type,ts:Date.now()}});
 }
 
 async function toggleNA(key){
@@ -763,9 +840,11 @@ async function toggleNA(key){
   const d=shared[key]||{};shared[key]={na:!d.na};
   renderRow(key);updateStats();
   const m=keyMap.find(k=>k.key===key);
-  logAct(currentUser.name+' marked "'+m.text.slice(0,40)+'…" as '+(d.na?'applicable':'N/A'),'na');
-  const res=await apiPost({action:'save_state',name:projectName,state:shared,activity});
-  if(!res)toast('⚠ Could not save to Drive — changes are local only');
+  const msg=currentUser.name+' marked "'+m.text.slice(0,40)+'…" as '+(d.na?'applicable':'N/A');
+  logAct(msg,'na');
+  const res=await apiPost({action:'saveAllState',project:projectName,state:shared});
+  if(!res){toast('⚠ Could not save — changes are local only');return;}
+  apiPost({action:'logActivity',project:projectName,entry:{msg,type:'na',ts:Date.now()}});
 }
 
 function updateStats(){
@@ -833,13 +912,13 @@ function ago(ts){
 
 async function confirmReset(){
   if(!projectName){toast('Select a project');return;}
-  if(!confirm('Reset ALL checkboxes for "'+projectName+'"?\n\nThis will update the Excel file in Drive.'))return;
+  if(!confirm('Reset ALL checkboxes for "'+projectName+'"?\n\nThis will clear all state in Drive.'))return;
   const blankState={};
   keyMap.forEach(m=>{const e=shared[m.key]||{};blankState[m.key]=e.na?{na:true}:{};});
   shared=blankState;activity=[];
   renderAllRows();updateStats();renderActivity();
-  const res=await apiPost({action:'save_state',name:projectName,state:shared,activity});
-  toast(res?'✓ Reset saved to Excel in Drive':'⚠ Reset locally — check connection');
+  const res=await apiPost({action:'saveAllState',project:projectName,state:shared});
+  toast(res?'✓ Reset saved to Drive':'⚠ Reset locally — check connection');
 }
 
 function toast(msg){
