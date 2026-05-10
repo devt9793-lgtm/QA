@@ -1,9 +1,8 @@
 // ============================================================
 // Vercel Serverless Function — /api/auth
-// CommonJS (no ESM needed) — works out of the box on Vercel
-// Storage: Vercel Blob (qa-system/users.json)
+// CommonJS — Vercel Blob with PRIVATE store access
 // ============================================================
-const { put, head } = require('@vercel/blob');
+const { put, head, getDownloadUrl } = require('@vercel/blob');
 const crypto = require('crypto');
 
 const BLOB_KEY  = 'qa-system/users.json';
@@ -13,21 +12,33 @@ const SALT      = process.env.AUTH_SALT || 'qa_salt_v1_2026';
 function hashPwd(p) { return crypto.createHash('sha256').update(p + SALT).digest('hex'); }
 function mkToken()  { return crypto.randomBytes(32).toString('hex'); }
 
+// ── Read users — private store uses token-authenticated fetch ──
 async function readUsers() {
   try {
-    const info = await head(BLOB_KEY, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => null);
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    // head() returns metadata including url for private blobs
+    const info = await head(BLOB_KEY, { token: blobToken }).catch(() => null);
     if (!info) return [];
-    const r = await fetch(info.downloadUrl + '?t=' + Date.now()); // bust cache
-    return r.ok ? await r.json() : [];
-  } catch { return []; }
+    // For private blobs, fetch with Authorization header
+    const r = await fetch(info.url, {
+      headers: { Authorization: `Bearer ${blobToken}` },
+    });
+    if (!r.ok) return [];
+    return await r.json();
+  } catch (e) {
+    console.error('readUsers error:', e.message);
+    return [];
+  }
 }
 
+// ── Write users — private store ──
 async function writeUsers(users) {
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
   await put(BLOB_KEY, JSON.stringify(users, null, 2), {
-    access: 'public',
+    access: 'private',
     contentType: 'application/json',
     addRandomSuffix: false,
-    token: process.env.BLOB_READ_WRITE_TOKEN,
+    token: blobToken,
   });
 }
 
