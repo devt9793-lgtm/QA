@@ -1,49 +1,44 @@
 // ============================================================
 // Vercel Serverless Function — /api/auth
-// CommonJS — Vercel Blob with PRIVATE store access
+// PUBLIC blob store (qa-auth-blob)
 // ============================================================
-const { put, head, getDownloadUrl } = require('@vercel/blob');
+const { put, list } = require('@vercel/blob');
 const crypto = require('crypto');
 
-const BLOB_KEY  = 'qa-system/users.json';
+const BLOB_KEY  = 'users.json';
 const TOKEN_TTL = 8 * 60 * 60 * 1000;
 const SALT      = process.env.AUTH_SALT || 'qa_salt_v1_2026';
 
 function hashPwd(p) { return crypto.createHash('sha256').update(p + SALT).digest('hex'); }
 function mkToken()  { return crypto.randomBytes(32).toString('hex'); }
 
-// ── Read users — private store uses token-authenticated fetch ──
 async function readUsers() {
   try {
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-    // head() returns metadata including url for private blobs
-    const info = await head(BLOB_KEY, { token: blobToken }).catch(() => null);
-    if (!info) return [];
-    // For private blobs, fetch with Authorization header
-    const r = await fetch(info.url, {
-      headers: { Authorization: `Bearer ${blobToken}` },
-    });
+    // List blobs to find users.json URL (works reliably with public store)
+    const { blobs } = await list({ token: process.env.BLOB_READ_WRITE_TOKEN, prefix: BLOB_KEY });
+    if (!blobs || blobs.length === 0) return [];
+    // Fetch the latest blob by URL (public — no auth header needed)
+    const url = blobs[0].downloadUrl || blobs[0].url;
+    const r   = await fetch(url + '?t=' + Date.now()); // cache bust
     if (!r.ok) return [];
     return await r.json();
   } catch (e) {
-    console.error('readUsers error:', e.message);
+    console.error('[readUsers]', e.message);
     return [];
   }
 }
 
-// ── Write users — private store ──
 async function writeUsers(users) {
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
   await put(BLOB_KEY, JSON.stringify(users, null, 2), {
-    access: 'private',
-    contentType: 'application/json',
-    addRandomSuffix: false,
-    token: blobToken,
+    access:           'public',
+    contentType:      'application/json',
+    addRandomSuffix:  false,
+    token:            process.env.BLOB_READ_WRITE_TOKEN,
   });
 }
 
 function cors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-auth-token');
 }
@@ -51,6 +46,9 @@ function cors(res) {
 module.exports = async function handler(req, res) {
   cors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Debug — log token presence (never log the actual token)
+  console.log('[auth] BLOB token present:', !!process.env.BLOB_READ_WRITE_TOKEN);
 
   const action = req.query.action || (req.body && req.body.action) || '';
   const body   = req.body || {};
@@ -61,6 +59,7 @@ module.exports = async function handler(req, res) {
     if (action === 'verify')   return await doVerify(req, res);
     if (action === 'logout')   return await doLogout(req, body, res);
     if (action === 'list')     return await doList(req, res);
+    if (action === 'ping')     return res.status(200).json({ ok: true, token: !!process.env.BLOB_READ_WRITE_TOKEN });
     return res.status(400).json({ error: 'Unknown action: ' + action });
   } catch (e) {
     console.error('[auth]', e);
@@ -122,11 +121,9 @@ async function doLogin({ email, password }, res) {
   await writeUsers(users);
 
   return res.status(200).json({
-    ok: true,
-    token:  users[idx].token,
-    name:   users[idx].name,
-    email:  emailLC,
-    role:   users[idx].role,
+    ok: true, token: users[idx].token,
+    name: users[idx].name, email: emailLC,
+    role: users[idx].role,
   });
 }
 
