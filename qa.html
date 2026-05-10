@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QA Launch System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2332;--gold:#C8973A;
+  --g:#1D9E75;--gbg:#E1F5EE;--gdk:#085041;
+  --red:#E24B4A;--redbg:#FCEBEB;
+  --blue:#185FA5;--bluebg:#E6F1FB;
+  --amber:#BA7517;--amberbg:#FAEEDA;
+  --pink:#993556;--pinkbg:#FBEAF0;
+  --border:#e5e7eb;--border2:#f3f4f6;
+  --txt:#111827;--txt2:#6b7280;--txt3:#9ca3af;
+  --bg:#f0f2f6;--surf:#fff;--surf2:#f8f9fb;
+  --xl-green:#1D6F42;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);font-size:14px;min-height:100vh}
+
+/* ── AUTH SCREEN ── */
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy) 0%,#243347 100%)}
+.auth-card{background:var(--surf);border-radius:20px;padding:36px 40px;width:420px;max-width:94vw;box-shadow:0 32px 64px rgba(0,0,0,.3)}
+.auth-logo{width:44px;height:44px;border-radius:11px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--navy);margin-bottom:20px}
+.auth-title{font-size:22px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.auth-sub{font-size:13px;color:var(--txt2);margin-bottom:28px;line-height:1.5}
+.auth-tabs{display:flex;gap:2px;background:var(--border2);border-radius:9px;padding:3px;margin-bottom:24px}
+.auth-tab{flex:1;padding:7px;border-radius:7px;border:none;background:transparent;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--txt2);transition:all .15s}
+.auth-tab.on{background:var(--surf);color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.afield{margin-bottom:14px}
+.afield label{display:block;font-size:12px;font-weight:500;color:var(--txt2);margin-bottom:5px}
+.afield input{width:100%;padding:10px 13px;border-radius:9px;border:1.5px solid var(--border);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;color:var(--txt);background:var(--surf);transition:border-color .15s}
+.afield input:focus{border-color:var(--navy)}
+.afield input.err{border-color:var(--red)}
+.auth-btn{width:100%;padding:11px;border-radius:9px;background:var(--navy);color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s;margin-top:4px}
+.auth-btn:hover{opacity:.88}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-err{font-size:12px;color:var(--red);background:var(--redbg);border-radius:7px;padding:8px 12px;margin-bottom:12px;display:none}
+.auth-err.show{display:block}
+.auth-pwd-wrap{position:relative}
+.auth-pwd-wrap input{padding-right:40px}
+.pwd-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt3);font-size:13px;padding:4px}
+.pwd-strength{height:3px;border-radius:2px;margin-top:5px;transition:all .3s;background:var(--border)}
+.pwd-strength.weak{background:var(--red);width:33%}
+.pwd-strength.med{background:var(--amber);width:66%}
+.pwd-strength.strong{background:var(--g);width:100%}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--navy);padding:0 20px;height:54px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:60;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-logo{width:30px;height:30px;border-radius:7px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--navy)}
+.brand-name{font-size:14px;font-weight:600;color:#fff}
+.brand-proj{color:var(--gold);font-weight:700}
+.brand-sub{font-size:11px;color:rgba(255,255,255,.38)}
+.tb-right{display:flex;align-items:center;gap:6px}
+.tb-btn{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:7px;border:0.5px solid rgba(255,255,255,.16);background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.tb-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.tb-btn.danger{background:rgba(226,75,74,.18);border-color:rgba(226,75,74,.45);color:#fca5a5}
+.tb-btn.danger:hover{background:rgba(226,75,74,.28)}
+.tb-btn.green{background:rgba(29,158,117,.25);border-color:rgba(29,158,117,.5);color:#6ee7b7}
+.sync-wrap{display:flex;align-items:center;gap:5px}
+.sdot{width:7px;height:7px;border-radius:50%;background:#4ade80;transition:background .3s;flex-shrink:0}
+.sdot.syncing{background:var(--gold);animation:pulse .8s infinite}
+.sdot.err{background:var(--red)}
+.sdot.offline{background:var(--txt3)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.slbl{font-size:11px;color:rgba(255,255,255,.4)}
+.user-pill{display:flex;align-items:center;gap:7px;padding:4px 11px 4px 5px;border-radius:100px;background:rgba(255,255,255,.08);border:0.5px solid rgba(255,255,255,.14);cursor:default}
+.uav{width:24px;height:24px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--navy);flex-shrink:0}
+.uname{font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+
+/* ── MODALS ── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.ov.show{opacity:1;pointer-events:all}
+.modal{background:var(--surf);border-radius:16px;padding:28px;width:420px;max-width:94vw;transform:translateY(12px);transition:transform .22s}
+.ov.show .modal{transform:translateY(0)}
+.modal h3{font-size:16px;font-weight:600;margin-bottom:5px}
+.modal p{font-size:13px;color:var(--txt2);margin-bottom:18px;line-height:1.55}
+.minput{width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;color:var(--txt);background:var(--surf);margin-bottom:12px;transition:border-color .15s}
+.minput:focus{border-color:var(--navy)}
+.hint{font-size:11px;color:var(--txt3);margin-bottom:14px;line-height:1.55}
+.mactions{display:flex;gap:8px}
+.mbtn{flex:1;padding:10px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.mbtn.cancel{background:var(--surf2);color:var(--txt2)}
+.mbtn.ok{background:var(--navy);color:#fff}
+.mbtn.ok:hover{opacity:.88}
+
+/* ── OFFLINE BANNER ── */
+.offline-banner{background:#FEF3C7;border-bottom:1px solid #FCD34D;padding:8px 20px;font-size:12px;color:#92400E;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.offline-banner button{font-size:11px;padding:4px 12px;border-radius:6px;border:0.5px solid #F59E0B;background:transparent;color:#92400E;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* ── SKELETON LOADER ── */
+.skeleton{background:linear-gradient(90deg,var(--border2) 25%,var(--border) 50%,var(--border2) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:6px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── MAIN ── */
+.main{max-width:1040px;margin:0 auto;padding:20px 16px}
+.proj-panel{background:var(--surf);border:0.5px solid var(--border);border-radius:13px;padding:18px 20px;margin-bottom:14px}
+.pp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px}
+.pp-title{font-size:13px;font-weight:600;color:var(--txt);display:flex;align-items:center;gap:8px}
+.pp-sub{font-size:12px;color:var(--txt2);margin-bottom:14px;line-height:1.6}
+.pp-row{display:flex;gap:8px;flex-wrap:wrap}
+.pp-input{flex:1;min-width:200px;padding:9px 13px;border-radius:9px;border:1.5px solid var(--border);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;color:var(--txt);background:var(--surf);transition:border-color .15s}
+.pp-input:focus{border-color:var(--navy)}
+.pp-btn{padding:9px 20px;border-radius:9px;background:var(--navy);color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.pp-btn:hover{opacity:.88}
+.chips-wrap{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chips-label{font-size:11px;color:var(--txt3);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.proj-chip{display:flex;align-items:center;gap:7px;padding:6px 10px 6px 8px;border-radius:9px;border:0.5px solid var(--border);background:var(--surf2);cursor:pointer;transition:all .15s;user-select:none}
+.proj-chip:hover{border-color:var(--navy);background:#fff}
+.proj-chip.active{border-color:var(--navy);background:var(--navy);color:#fff}
+.proj-chip .pcdot{width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0}
+.proj-chip.active .pcdot{background:var(--gold)}
+.proj-chip .pcname{font-size:12px;font-weight:500}
+.proj-chip .pcpct{font-size:10px;color:var(--txt3);margin-left:2px}
+.proj-chip.active .pcpct{color:rgba(255,255,255,.5)}
+.chips-skel{display:flex;gap:8px}
+.chips-skel span{height:30px;width:100px;display:inline-block}
+
+/* ── STATUS BAR ── */
+.status-bar{background:var(--surf);border:0.5px solid var(--border);border-radius:10px;padding:9px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px}
+.sb-label{flex:1;color:var(--txt2)}
+.sb-label strong{color:var(--txt)}
+.sb-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600}
+.sb-ok{background:var(--gbg);color:var(--gdk);border:0.5px solid #9FE1CB}
+.sb-warn{background:#FEF3C7;color:#92400E;border:0.5px solid #FCD34D}
+.sb-err{background:var(--redbg);color:var(--red);border:0.5px solid #fca5a5}
+.sb-btn{padding:4px 11px;border-radius:6px;border:0.5px solid var(--border);background:var(--surf2);font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--txt2);transition:all .12s;white-space:nowrap}
+.sb-btn:hover{background:var(--border)}
+.sb-btn.green{border-color:var(--g);color:var(--gdk)}
+
+/* ── STATS ── */
+.stats{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.scard{background:var(--surf);border:0.5px solid var(--border);border-radius:10px;padding:12px 16px;flex:1;min-width:100px}
+.scard .sv{font-size:22px;font-weight:600;line-height:1}
+.scard .sl{font-size:11px;color:var(--txt2);margin-top:3px;letter-spacing:.03em}
+.scard.green{background:var(--gbg);border-color:#9FE1CB}
+.scard.green .sv{color:var(--gdk)}
+.prog-card{background:var(--surf);border:0.5px solid var(--border);border-radius:10px;padding:12px 16px;flex:2;min-width:160px;display:flex;align-items:center;gap:12px}
+.pbar{flex:1;height:7px;background:var(--border);border-radius:100px;overflow:hidden}
+.pfill{height:100%;background:var(--g);border-radius:100px;transition:width .4s}
+.ppct{font-size:13px;font-weight:600;color:var(--gdk);min-width:34px;text-align:right}
+
+/* ── FILTER ── */
+.filter-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.fl{font-size:11px;color:var(--txt3);font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-right:2px}
+.chip{padding:5px 13px;border-radius:100px;border:0.5px solid var(--border);background:var(--surf);font-size:12px;color:var(--txt2);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .15s}
+.chip:hover{border-color:var(--navy);color:var(--navy)}
+.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.chip.on.dev{background:var(--blue);border-color:var(--blue)}
+.chip.on.server{background:var(--amber);border-color:var(--amber)}
+.chip.on.seo{background:var(--g);border-color:var(--g)}
+.chip.on.qa{background:var(--pink);border-color:var(--pink)}
+
+/* ── SECTIONS ── */
+.sec-wrap{background:var(--surf);border:0.5px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:8px}
+.sec-hdr{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;user-select:none;transition:background .12s;border-bottom:0.5px solid transparent}
+.sec-hdr:hover{background:var(--surf2)}
+.sec-hdr.opened{border-bottom-color:var(--border)}
+.sec-ico{width:30px;height:30px;border-radius:8px;background:var(--surf2);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.sec-title{font-size:13px;font-weight:600;flex:1}
+.sec-meta{display:flex;align-items:center;gap:6px}
+.badge{font-size:10px;padding:2px 8px;border-radius:100px;font-weight:600;white-space:nowrap}
+.b-new{background:var(--gbg);color:var(--gdk)}
+.b-count{background:var(--surf2);color:var(--txt2);border:0.5px solid var(--border)}
+.b-all{background:var(--gbg);color:var(--gdk)}
+.chev{font-size:10px;color:var(--txt3);transition:transform .2s;display:inline-block;margin-left:2px}
+.chev.open{transform:rotate(90deg)}
+.sec-body{display:none}
+.sec-body.open{display:block}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead tr{background:var(--surf2)}
+th{font-size:10px;font-weight:500;color:var(--txt3);padding:7px 12px;text-align:left;border-bottom:0.5px solid var(--border);letter-spacing:.07em;text-transform:uppercase}
+th:nth-child(1){width:40px;text-align:center}
+th:nth-child(2){width:auto}
+th:nth-child(3){width:88px}
+th:nth-child(4){width:108px}
+th:nth-child(5){width:72px}
+th:nth-child(6){width:64px}
+td{padding:8px 12px;font-size:13px;vertical-align:middle;border-bottom:0.5px solid var(--border2)}
+tr:last-child td{border-bottom:none}
+tr.ri:hover{background:#fafbfd}
+tr.ri{cursor:pointer;transition:background .1s}
+tr.faded{opacity:.42}
+.cbw{display:flex;align-items:center;justify-content:center}
+.cb{width:16px;height:16px;border-radius:4px;border:1.5px solid #d1d5db;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.cb.on{background:var(--g);border-color:var(--g)}
+.cb svg{width:10px;height:10px;opacity:0;transition:opacity .12s}
+.cb.on svg{opacity:1}
+tr.ticked .item-txt{text-decoration:line-through;color:var(--txt2)}
+.item-txt{line-height:1.45}
+.ntag{font-size:9px;font-weight:700;color:var(--gdk);background:var(--gbg);border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.ctag{font-size:9px;font-weight:700;color:var(--blue);background:var(--bluebg);border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.st-done{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;color:var(--gdk);background:var(--gbg);padding:3px 9px;border-radius:100px}
+.st-na{display:inline-flex;font-size:11px;color:var(--txt2);background:var(--surf2);padding:3px 9px;border-radius:100px;border:0.5px solid var(--border)}
+.by-chip{font-size:11px;color:var(--txt2);display:flex;align-items:center;gap:5px}
+.bav{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0}
+.tm{font-size:11px;color:var(--txt3)}
+.na-btn{font-size:11px;color:var(--txt3);cursor:pointer;padding:3px 9px;border-radius:6px;border:0.5px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;transition:all .12s}
+.na-btn:hover{background:var(--surf2);color:var(--txt2)}
+.na-btn.on{background:var(--surf2);border-color:#aaa;color:var(--txt2)}
+.add-row{padding:8px 12px;border-top:0.5px solid var(--border);background:var(--surf);display:flex;gap:8px}
+.add-input{flex:1;padding:7px 10px;border-radius:7px;border:1.5px solid var(--border);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;color:var(--txt);background:var(--surf);transition:border-color .15s}
+.add-input:focus{border-color:var(--navy)}
+.add-input::placeholder{color:var(--txt3);font-style:italic}
+.add-sub{padding:7px 14px;border-radius:7px;background:var(--navy);color:#fff;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* ── SHEET PANEL ── */
+.xl-panel{background:linear-gradient(135deg,#f0faf5,#e8f5e9);border:0.5px solid #9FE1CB;border-radius:12px;padding:14px 18px;margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.xl-left{display:flex;align-items:center;gap:10px}
+.xl-icon{width:36px;height:36px;background:var(--xl-green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.xl-title{font-size:13px;font-weight:600;color:var(--gdk)}
+.xl-sub{font-size:11px;color:#4caf7d;margin-top:1px}
+.xl-actions{display:flex;gap:7px}
+.xl-btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.xl-btn.view{background:#fff;color:var(--xl-green);border:0.5px solid #9FE1CB}
+.xl-btn.view:hover{background:var(--gbg)}
+
+/* ── ACTIVITY ── */
+.act-panel{background:var(--surf);border:0.5px solid var(--border);border-radius:12px;margin-top:10px;overflow:hidden}
+.act-hdr{padding:9px 16px;background:var(--surf2);border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.act-hdr span{font-size:11px;font-weight:500;color:var(--txt2);text-transform:uppercase;letter-spacing:.05em}
+.act-list{max-height:130px;overflow-y:auto;padding:4px 0}
+.act-item{display:flex;align-items:flex-start;gap:9px;padding:5px 16px;font-size:12px;color:var(--txt2);line-height:1.4}
+.adot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px;background:var(--g)}
+.adot.na{background:var(--txt3)}.adot.undo{background:var(--amber)}.adot.custom{background:var(--blue)}
+.aempty{padding:14px;text-align:center;font-size:12px;color:var(--txt3)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--navy);color:#fff;padding:10px 20px;border-radius:100px;font-size:13px;border:0.5px solid rgba(255,255,255,.1);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none;z-index:200;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.empty-state{text-align:center;padding:48px 24px;color:var(--txt2)}
+.empty-state .ei{font-size:40px;margin-bottom:12px}
+.empty-state .et{font-size:15px;font-weight:600;color:var(--txt);margin-bottom:6px}
+.empty-state .es{font-size:13px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- ══ AUTH SCREEN ══ -->
+<div id="auth-screen" style="display:none">
+  <div class="auth-card">
+    <div class="auth-logo">QA</div>
+    <div class="auth-title">QA Launch System</div>
+    <div class="auth-sub">Sign in to access your team's QA checklist.</div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" id="tab-login" onclick="showTab('login')">Sign in</button>
+      <button class="auth-tab" id="tab-register" onclick="showTab('register')">Create account</button>
+    </div>
+    <div class="auth-err" id="auth-err"></div>
+
+    <!-- LOGIN -->
+    <div id="form-login">
+      <div class="afield"><label>Email</label><input type="email" id="l-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="afield">
+        <label>Password</label>
+        <div class="auth-pwd-wrap">
+          <input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+          <button class="pwd-toggle" onclick="togglePwd('l-pass',this)" tabindex="-1">👁</button>
+        </div>
+      </div>
+      <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign in</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="form-register" style="display:none">
+      <div class="afield"><label>Full name</label><input type="text" id="r-name" placeholder="Raj Kumar" onkeydown="if(event.key==='Enter')doRegister()"></div>
+      <div class="afield"><label>Email</label><input type="email" id="r-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doRegister()"></div>
+      <div class="afield">
+        <label>Password <span style="color:var(--txt3);font-size:10px">(min 6 characters)</span></label>
+        <div class="auth-pwd-wrap">
+          <input type="password" id="r-pass" placeholder="••••••••" oninput="checkPwdStrength(this)" onkeydown="if(event.key==='Enter')doRegister()">
+          <button class="pwd-toggle" onclick="togglePwd('r-pass',this)" tabindex="-1">👁</button>
+        </div>
+        <div class="pwd-strength" id="pwd-strength"></div>
+      </div>
+      <button class="auth-btn" id="register-btn" onclick="doRegister()">Create account</button>
+    </div>
+
+    <div style="margin-top:16px;font-size:11px;color:var(--txt3);text-align:center">
+      Need to change the API URL? <a href="#" onclick="openApiModal();return false" style="color:var(--blue)">Click here</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="app" style="display:none">
+  <div class="offline-banner" id="api-warn" style="display:none">
+    <span id="api-warn-msg">⚠ Cannot reach the API.</span>
+    <button onclick="openApiModal()">⚙ Change API URL</button>
+  </div>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-logo">QA</div>
+      <div>
+        <div class="brand-name">QA System — <span class="brand-proj" id="top-proj">No Project</span></div>
+        <div class="brand-sub">Google Drive · Live sync</div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <div class="sync-wrap"><div class="sdot" id="sdot"></div><span class="slbl" id="slbl">Loading…</span></div>
+      <div class="user-pill">
+        <div class="uav" id="top-av">?</div>
+        <span class="uname" id="top-uname">…</span>
+      </div>
+      <button class="tb-btn green" onclick="openInDrive()">📂 Open Sheet</button>
+      <button class="tb-btn" onclick="openApiModal()" title="Settings">⚙</button>
+      <button class="tb-btn danger" onclick="confirmReset()">↺ Reset</button>
+      <button class="tb-btn danger" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- ADD ITEM MODAL -->
+  <div class="ov" id="am">
+    <div class="modal">
+      <h3>Add checklist item</h3>
+      <p>Item will be added to the section and saved to Drive.</p>
+      <select class="minput" id="adept" style="cursor:pointer"></select>
+      <input class="minput" id="aitem" placeholder="Describe the checklist item…" maxlength="180" onkeydown="if(event.key==='Enter')submitAddItem()">
+      <div class="mactions">
+        <button class="mbtn cancel" onclick="closeAddModal()">Cancel</button>
+        <button class="mbtn ok" onclick="submitAddItem()">Add item</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API URL MODAL -->
+  <div class="ov" id="apm">
+    <div class="modal">
+      <h3>⚙ API Settings</h3>
+      <p>Paste your Google Apps Script Web App URL. Saved in browser.</p>
+      <input class="minput" id="apm-url" placeholder="https://script.google.com/macros/s/…/exec">
+      <div class="hint">Apps Script → Deploy → Manage Deployments → copy Web App URL</div>
+      <div class="mactions">
+        <button class="mbtn cancel" onclick="closeApiModal()">Cancel</button>
+        <button class="mbtn ok" onclick="saveApiUrl()">Save & reconnect</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="proj-panel">
+      <div class="pp-header">
+        <div class="pp-title">🚀 Projects</div>
+      </div>
+      <div class="pp-sub">Each project is a Google Sheet in your Drive folder. Updates sync live for your whole team.</div>
+      <div class="pp-row">
+        <input class="pp-input" id="proj-input" placeholder="New project name…" maxlength="60" onkeydown="if(event.key==='Enter')startProject()">
+        <button class="pp-btn" onclick="startProject()">Create Project →</button>
+      </div>
+      <div class="chips-wrap" id="chips-wrap">
+        <span class="chips-label">All projects</span>
+        <div class="chips-skel" id="chips-skel">
+          <span class="skeleton"></span><span class="skeleton" style="width:120px"></span><span class="skeleton" style="width:80px"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar" id="status-bar" style="display:none">
+      <span class="sb-label">📋 <strong id="sb-name">—</strong></span>
+      <span id="sb-ind"></span>
+      <button class="sb-btn" onclick="refreshProject()">↻ Refresh</button>
+      <button class="sb-btn green" onclick="openInDrive()">📂 Sheet</button>
+    </div>
+
+    <div class="stats">
+      <div class="scard green"><div class="sv" id="s-done">0</div><div class="sl">Completed</div></div>
+      <div class="scard"><div class="sv" id="s-total">0</div><div class="sl">Total</div></div>
+      <div class="scard"><div class="sv" id="s-na">0</div><div class="sl">N/A</div></div>
+      <div class="scard"><div class="sv" id="s-rem">0</div><div class="sl">Remaining</div></div>
+      <div class="prog-card"><div class="pbar"><div class="pfill" id="pfill" style="width:0%"></div></div><div class="ppct" id="ppct">0%</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <span class="fl">Filter</span>
+      <button class="chip on" data-r="all" onclick="setFilter('all')">All</button>
+      <button class="chip" data-r="dev" onclick="setFilter('dev')">Developer</button>
+      <button class="chip" data-r="server" onclick="setFilter('server')">Server</button>
+      <button class="chip" data-r="seo" onclick="setFilter('seo')">SEO</button>
+      <button class="chip" data-r="qa" onclick="setFilter('qa')">QA</button>
+      <span style="flex:1"></span>
+      <button class="tb-btn" style="color:var(--txt2);border-color:var(--border);background:var(--surf);font-size:12px" onclick="openAddModal()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>
+        Add item
+      </button>
+    </div>
+
+    <div id="cl">
+      <div class="empty-state"><div class="ei">📋</div><div class="et">Select or create a project above</div><div class="es">Each project is a Google Sheet in Drive — live sync for your whole team.</div></div>
+    </div>
+
+    <div class="xl-panel" id="xl-panel" style="display:none">
+      <div class="xl-left"><div class="xl-icon">📊</div><div><div class="xl-title">Google Sheet in Drive</div><div class="xl-sub" id="xl-sub">Project state saved in real-time</div></div></div>
+      <div class="xl-actions"><button class="xl-btn view" onclick="openInDrive()">📂 Open Sheet</button></div>
+    </div>
+
+    <div class="act-panel" style="margin-top:10px">
+      <div class="act-hdr"><span>Recent activity</span><span id="act-count" style="font-size:11px;color:var(--txt3)">0 actions</span></div>
+      <div class="act-list" id="act-list"><div class="aempty">No activity yet.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG — paste your Apps Script URL here OR set via ⚙
+// ═══════════════════════════════════════════════════════════
+const HARDCODED_API = 'https://script.google.com/macros/s/AKfycbzzcZh89taEio4KMEtvrGt81Jf67-HE8FcR1b_SfeU9M6jkYAAOFrEUjJvqijiENfCk/exec';
+
+let API_URL = localStorage.getItem('qa7_api') || HARDCODED_API || '';
+const IS_LOCAL = location.protocol === 'file:';
+
+// ── App state ──
+let sections=[], shared={}, activity=[];
+let keyMap=[], total=0;
+let currentFilter='all';
+let projectName='', currentSheetId='';
+let pollTimer=null;
+let cachedMaster=null; // master checklist cached in memory
+
+// ── Auth state ──
+let authToken = localStorage.getItem('qa7_token') || '';
+let authUser  = JSON.parse(localStorage.getItem('qa7_user') || 'null');
+
+const ROLES = [
+  {id:'dev',   label:'Developer', icon:'💻', color:'#185FA5', bg:'#E6F1FB'},
+  {id:'server',label:'Server',    icon:'🖥',  color:'#BA7517', bg:'#FAEEDA'},
+  {id:'seo',   label:'SEO',       icon:'🔍', color:'#0F6E56', bg:'#E1F5EE'},
+  {id:'qa',    label:'QA',        icon:'✅', color:'#993556', bg:'#FBEAF0'},
+];
+const RC = id => ROLES.find(r=>r.id===id)||ROLES[3];
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+async function init() {
+  if (authToken && authUser) {
+    // Verify against Vercel Blob auth — fast, no Apps Script needed
+    const check = await authVerify(authToken);
+    if (check && check.valid) {
+      authUser = { name: check.name, email: check.email, role: check.role };
+      localStorage.setItem('qa7_user', JSON.stringify(authUser));
+      showApp(); return;
+    }
+    clearAuth();
+  }
+  showAuthScreen();
+}
+
+function showAuthScreen() {
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  setTimeout(() => document.getElementById('l-email').focus(), 200);
+}
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  updateTopbar();
+  loadInit(); // single combined API call — much faster
+}
+
+function clearAuth() {
+  authToken = ''; authUser = null;
+  localStorage.removeItem('qa7_token');
+  localStorage.removeItem('qa7_user');
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTH FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+function showTab(tab) {
+  document.getElementById('form-login').style.display    = tab==='login'    ? '' : 'none';
+  document.getElementById('form-register').style.display = tab==='register' ? '' : 'none';
+  document.getElementById('tab-login').classList.toggle('on',    tab==='login');
+  document.getElementById('tab-register').classList.toggle('on', tab==='register');
+  document.getElementById('auth-err').classList.remove('show');
+  // Focus first field
+  setTimeout(() => {
+    document.getElementById(tab==='login' ? 'l-email' : 'r-name').focus();
+  }, 50);
+}
+
+function showAuthErr(msg) {
+  const el = document.getElementById('auth-err');
+  el.textContent = msg; el.classList.add('show');
+}
+
+function togglePwd(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+function checkPwdStrength(inp) {
+  const v = inp.value, bar = document.getElementById('pwd-strength');
+  if (!v) { bar.className = 'pwd-strength'; return; }
+  const score = (v.length >= 8 ? 1 : 0) + (/[A-Z]/.test(v) ? 1 : 0) + (/[0-9]/.test(v) ? 1 : 0) + (/[^A-Za-z0-9]/.test(v) ? 1 : 0);
+  bar.className = 'pwd-strength ' + (score <= 1 ? 'weak' : score <= 2 ? 'med' : 'strong');
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  if (!email || !pass) { showAuthErr('Please enter your email and password'); return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  document.getElementById('auth-err').classList.remove('show');
+  const res = await authCall('login', { email, password: pass });
+  btn.disabled = false; btn.textContent = 'Sign in';
+  if (!res || res.error) { showAuthErr(res?.error || 'Could not connect — check your internet connection'); return; }
+  authToken = res.token; authUser = { name: res.name, email: res.email, role: res.role };
+  localStorage.setItem('qa7_token', authToken);
+  localStorage.setItem('qa7_user', JSON.stringify(authUser));
+  showApp();
+}
+
+async function doRegister() {
+  const name  = document.getElementById('r-name').value.trim();
+  const email = document.getElementById('r-email').value.trim();
+  const pass  = document.getElementById('r-pass').value;
+  if (!name || !email || !pass) { showAuthErr('Please fill in all fields'); return; }
+  if (pass.length < 6) { showAuthErr('Password must be at least 6 characters'); return; }
+  const btn = document.getElementById('register-btn');
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  document.getElementById('auth-err').classList.remove('show');
+  const res = await authCall('register', { name, email, password: pass });
+  btn.disabled = false; btn.textContent = 'Create account';
+  if (!res || res.error) { showAuthErr(res?.error || 'Could not connect — check your internet connection'); return; }
+  authToken = res.token; authUser = { name: res.name, email: res.email, role: res.role };
+  localStorage.setItem('qa7_token', authToken);
+  localStorage.setItem('qa7_user', JSON.stringify(authUser));
+  showApp();
+}
+
+async function doLogout() {
+  if (!confirm('Sign out?')) return;
+  if (authToken) authCall('logout', { token: authToken }).catch(()=>{});
+  clearAuth();
+  cachedMaster = null; sections = []; shared = {}; activity = [];
+  projectName = ''; currentSheetId = '';
+  if (pollTimer) clearInterval(pollTimer);
+  showAuthScreen();
+  showTab('login');
+}
+
+function updateTopbar() {
+  if (!authUser) return;
+  document.getElementById('top-uname').textContent = authUser.name;
+  const av = document.getElementById('top-av');
+  av.textContent = authUser.name[0].toUpperCase();
+  const r = RC(authUser.role || 'qa');
+  av.style.background = r.color; av.style.color = '#fff';
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTH API — calls /api/auth (Vercel Blob, fast ~100ms)
+// QA API   — calls Apps Script (Google Drive)
+// ═══════════════════════════════════════════════════════════
+
+// Detect base URL for /api/auth (works hosted + local)
+const AUTH_BASE = IS_LOCAL ? 'https://qa-lime-nine.vercel.app' : '';
+
+async function authCall(action, body = {}) {
+  try {
+    const r = await fetch(`${AUTH_BASE}/api/auth?action=${action}`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'x-auth-token':  authToken || '',
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10000),
+    });
+    const json = await r.json();
+    return json;
+  } catch(e) {
+    return { error: 'Could not connect to auth server' };
+  }
+}
+
+async function authVerify(token) {
+  try {
+    const r = await fetch(`${AUTH_BASE}/api/auth?action=verify`, {
+      headers: { 'x-auth-token': token },
+      signal: AbortSignal.timeout(8000),
+    });
+    return await r.json();
+  } catch { return { valid: false }; }
+}
+
+function isValidUrl(u) { return u && u.includes('script.google.com'); }
+
+// QA data API — Apps Script (unchanged)
+async function apiGet(params) {
+  if (!isValidUrl(API_URL)) return null;
+  setSyncState('syncing');
+  const qs     = new URLSearchParams(params).toString();
+  const direct = API_URL + '?' + qs;
+  const proxy  = `https://api.allorigins.win/raw?url=${encodeURIComponent(direct)}`;
+  const order  = IS_LOCAL ? [proxy, direct] : [direct, proxy];
+  for (const url of order) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      if (!r.ok) continue;
+      const json = await r.json();
+      if (json && !json.error) { setSyncState('ok'); hideApiWarn(); return json; }
+      if (json && json.error)  { setSyncState('err'); toast('⚠ ' + json.error); return null; }
+    } catch(e) {}
+  }
+  setSyncState('err');
+  showApiWarn('⚠ Cannot reach the QA API — check URL via ⚙');
+  return null;
+}
+
+async function apiPost(body) {
+  if (!isValidUrl(API_URL)) return null;
+  setSyncState('syncing');
+  try {
+    const r = await fetch(API_URL, {
+      method:  'POST',
+      body:    JSON.stringify(body),
+      headers: { 'Content-Type': 'text/plain' },
+      signal:  AbortSignal.timeout(30000),
+    });
+    if (!r.ok) { setSyncState('err'); return null; }
+    const json = await r.json();
+    if (json && json.error) { setSyncState('err'); toast('⚠ ' + json.error); return null; }
+    setSyncState('ok'); hideApiWarn(); return json;
+  } catch(e) {
+    setSyncState('err');
+    toast('⚠ Save failed — check connection');
+    return null;
+  }
+}
+
+function setSyncState(s) {
+  const d=document.getElementById('sdot'), l=document.getElementById('slbl');
+  if (!d) return;
+  d.className = 'sdot' + (s==='syncing'?' syncing':s==='err'?' err':s==='offline'?' offline':'');
+  l.textContent = { syncing:'Saving…', err:'Error', offline:'Offline', ok:'Saved ✓' }[s] || 'Ready';
+}
+
+function showApiWarn(msg) { document.getElementById('api-warn-msg').textContent=msg; document.getElementById('api-warn').style.display='flex'; }
+function hideApiWarn() { document.getElementById('api-warn').style.display='none'; }
+
+// ── API URL modal ──
+function openApiModal() {
+  document.getElementById('apm-url').value = isValidUrl(API_URL) ? API_URL : '';
+  document.getElementById('apm').classList.add('show');
+  setTimeout(() => document.getElementById('apm-url').focus(), 120);
+}
+function closeApiModal() { document.getElementById('apm').classList.remove('show'); }
+function saveApiUrl() {
+  const url = (document.getElementById('apm-url').value || '').trim();
+  if (!isValidUrl(url)) { toast('⚠ Please paste a valid Apps Script URL'); return; }
+  API_URL = url;
+  localStorage.setItem('qa7_api', url);
+  closeApiModal(); hideApiWarn();
+  toast('✓ URL saved');
+  if (authToken && authUser) { cachedMaster=null; loadInit(); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SPEED — single combined init call fetches master + project + list
+// ═══════════════════════════════════════════════════════════
+async function loadInit() {
+  const last = localStorage.getItem('qa7_last') || '';
+  setSyncState('syncing');
+  document.getElementById('chips-skel').style.display = 'flex';
+
+  // One API call returns everything: master CSV, project state, project list
+  const data = await apiGet({ action: 'getInit', project: last });
+  document.getElementById('chips-skel').style.display = 'none';
+
+  if (!data) return;
+
+  // Cache master
+  if (data.master && data.master.csv) {
+    cachedMaster = parseMasterCsv(data.master.csv);
+  }
+
+  // Render project list
+  renderChips(data.projects || []);
+
+  // If we had a last project, load it directly from init data
+  if (last && data.project) {
+    projectName = last;
+    const proj = data.project;
+    shared   = proj.found ? (proj.state    || {}) : {};
+    activity = proj.found ? (proj.activity || []) : [];
+    // Find sheetId from projects list
+    const found = (data.projects || []).find(p => p.name === last);
+    if (found) currentSheetId = found.sheetId;
+    sections = cachedMaster || [];
+    document.getElementById('top-proj').textContent = last;
+    document.title = 'QA — ' + last;
+    document.getElementById('status-bar').style.display = 'flex';
+    document.getElementById('sb-name').textContent = last;
+    document.getElementById('xl-panel').style.display = 'flex';
+    document.getElementById('xl-sub').textContent = 'QA — ' + last;
+    document.querySelectorAll('.proj-chip').forEach(c => c.classList.toggle('active', c.dataset.proj === last));
+    buildUI(); renderAllRows(); updateStats(); renderActivity();
+    document.getElementById('sb-ind').innerHTML = '<span class="sb-pill sb-ok">✓ Live</span>';
+    setSyncState('ok');
+    startPolling();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROJECTS
+// ═══════════════════════════════════════════════════════════
+function renderChips(projects) {
+  const wrap = document.getElementById('chips-wrap');
+  const skel = document.getElementById('chips-skel');
+  if (skel) skel.remove();
+  // Remove old chips but keep label
+  wrap.querySelectorAll('.proj-chip').forEach(c=>c.remove());
+  if (!projects.length) {
+    if (!wrap.querySelector('.chips-empty')) {
+      const s = document.createElement('span');
+      s.className='chips-empty'; s.style.cssText='font-size:12px;color:var(--txt3)';
+      s.textContent='No projects yet — create one above'; wrap.appendChild(s);
+    }
+    return;
+  }
+  wrap.querySelector('.chips-empty')?.remove();
+  projects.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'proj-chip' + (p.name===projectName?' active':'');
+    div.dataset.proj = p.name;
+    div.innerHTML = `<span class="pcdot"></span><span class="pcname">${p.name}</span>`;
+    div.onclick = () => switchProject(p.name, p.sheetId);
+    wrap.appendChild(div);
+  });
+}
+function escD(s){return s.replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+async function startProject() {
+  const name = (document.getElementById('proj-input').value || '').trim();
+  if (!name) { toast('Enter a project name'); return; }
+  document.getElementById('proj-input').value = '';
+  toast('Creating "' + name + '"…');
+  const res = await apiPost({ action: 'createProject', project: name });
+  if (!res) { toast('⚠ Could not create project'); return; }
+  if (res.alreadyExists) toast('Project exists — loading');
+  else { toast('✓ Project created!'); currentSheetId = res.sheetId || ''; }
+  // Refresh list then switch
+  const list = await apiGet({ action: 'listProjects' });
+  if (list) renderChips(list.projects || []);
+  switchProject(name, res.sheetId);
+}
+
+async function switchProject(name, sheetId) {
+  if (name === projectName) return;
+  projectName = name;
+  if (sheetId) currentSheetId = sheetId;
+  localStorage.setItem('qa7_last', name);
+  document.getElementById('top-proj').textContent = name;
+  document.title = 'QA — ' + name;
+  document.getElementById('status-bar').style.display = 'flex';
+  document.getElementById('sb-name').textContent = name;
+  document.getElementById('xl-panel').style.display = 'flex';
+  document.getElementById('xl-sub').textContent = 'QA — ' + name;
+  document.querySelectorAll('.proj-chip').forEach(c => c.classList.toggle('active', c.dataset.proj === name));
+  await loadProjectData(name);
+  startPolling();
+}
+
+async function loadProjectData(name) {
+  setSyncState('syncing');
+  document.getElementById('sb-ind').innerHTML = '<span class="sb-pill sb-warn">Loading…</span>';
+
+  // Use cached master if available, otherwise fetch it
+  if (!cachedMaster) {
+    const m = await apiGet({ action: 'getMaster' });
+    if (m && m.csv) cachedMaster = parseMasterCsv(m.csv);
+  }
+  sections = cachedMaster || [];
+
+  const data = await apiGet({ action: 'getProject', project: name });
+  if (!data) { document.getElementById('sb-ind').innerHTML='<span class="sb-pill sb-err">⚠ Error</span>'; setSyncState('err'); return; }
+
+  if (!data.found) {
+    await apiPost({ action: 'createProject', project: name });
+    shared = {}; activity = [];
+  } else {
+    shared   = data.state    || {};
+    activity = data.activity || [];
+  }
+
+  buildUI(); renderAllRows(); updateStats(); renderActivity();
+  document.getElementById('sb-ind').innerHTML = '<span class="sb-pill sb-ok">✓ Live</span>';
+  setSyncState('ok');
+}
+
+async function refreshProject() {
+  if (!projectName) return;
+  cachedMaster = null; // force re-fetch of master on manual refresh
+  await loadProjectData(projectName);
+}
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    if (!projectName) return;
+    const data = await apiGet({ action: 'getProject', project: projectName });
+    if (!data || !data.found) return;
+    const remState = data.state || {};
+    let changed = false;
+    Object.keys(remState).forEach(k => {
+      if (JSON.stringify(remState[k]) !== JSON.stringify(shared[k])) { shared[k] = remState[k]; changed = true; }
+    });
+    if (changed) { renderAllRows(); updateStats(); toast('🔄 Updated by teammate'); }
+    const remAct = data.activity || [];
+    if ((remAct[0]?.ts || 0) !== (activity[0]?.ts || 0)) { activity = remAct; renderActivity(); }
+  }, 30000);
+}
+
+async function openInDrive() {
+  if (!projectName) { toast('Select a project first'); return; }
+  if (currentSheetId) { window.open('https://docs.google.com/spreadsheets/d/' + currentSheetId, '_blank'); return; }
+  const list = await apiGet({ action: 'listProjects' });
+  if (list && list.projects) {
+    const p = list.projects.find(x => x.name === projectName);
+    if (p && p.sheetId) { currentSheetId = p.sheetId; window.open('https://docs.google.com/spreadsheets/d/' + p.sheetId, '_blank'); return; }
+  }
+  toast('Open your Drive folder and look for "QA — ' + projectName + '"');
+}
+
+// ═══════════════════════════════════════════════════════════
+// MASTER CHECKLIST PARSER
+// ═══════════════════════════════════════════════════════════
+function parseMasterCsv(csv) {
+  const lines = csv.split('\n');
+  if (!lines.length) return [];
+  const headers = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  const sectionCol = headers.findIndex(h => h==='section'||h.includes('dept'));
+  const roleCol    = headers.findIndex(h => h==='role');
+  const itemCol    = headers.findIndex(h => h.includes('checklist')||h==='item');
+  const newCol     = headers.findIndex(h => h==='new item'||h==='isnew'||h==='new');
+  const iconCol    = headers.findIndex(h => h.includes('icon'));
+  const deptMap = {};
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const cols = parseCsvLine(lines[i]);
+    const dept = String(cols[sectionCol]||'General').trim();
+    const item = String(cols[itemCol]||'').trim();
+    if (!item) continue;
+    const role  = String(cols[roleCol]||'qa').trim().toLowerCase();
+    const isNew = ['yes','true','1','y'].includes(String(cols[newCol]||'').trim().toLowerCase());
+    const icon  = String(cols[iconCol]||'📋').trim()||'📋';
+    if (!deptMap[dept]) deptMap[dept] = { dept, icon, role, items: [] };
+    deptMap[dept].items.push({ t: item, isNew });
+  }
+  return Object.values(deptMap);
+}
+function parseCsvLine(line) {
+  const r=[]; let cur='',inQ=false;
+  for (let i=0;i<line.length;i++) {
+    const c=line[i];
+    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(c===','&&!inQ){r.push(cur);cur='';}
+    else cur+=c;
+  }
+  r.push(cur); return r;
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI BUILD
+// ═══════════════════════════════════════════════════════════
+function buildUI() {
+  keyMap=[]; total=0;
+  const container = document.getElementById('cl');
+  container.innerHTML = '';
+  if (!sections.length) {
+    container.innerHTML='<div class="empty-state"><div class="ei">📋</div><div class="et">No checklist loaded</div><div class="es">Check your Master Sheet has the correct column headers.</div></div>';
+    return;
+  }
+  const adept = document.getElementById('adept');
+  if (adept) adept.innerHTML = sections.map((s,i) => `<option value="${i}">${s.dept}</option>`).join('');
+
+  sections.forEach((sec, si) => {
+    total += sec.items.length;
+    const ri = RC(sec.role||'qa');
+    const newCount = sec.items.filter(i=>i.isNew).length;
+    const wrap = document.createElement('div');
+    wrap.className = 'sec-wrap'; wrap.dataset.role = sec.role||'qa';
+    wrap.innerHTML = `
+      <div class="sec-hdr" id="shdr-${si}" onclick="toggleSec(${si})">
+        <div class="sec-ico">${sec.icon||'📋'}</div>
+        <div class="sec-title">${sec.dept}</div>
+        <div class="sec-meta">
+          <span class="badge" style="background:${ri.bg};color:${ri.color};border-radius:100px;padding:2px 8px;font-size:10px;font-weight:600">${ri.label}</span>
+          ${newCount>0?`<span class="badge b-new">+${newCount} new</span>`:''}
+          <span class="badge b-count" id="sc-${si}">0/${sec.items.length}</span>
+          <span class="chev" id="chev-${si}">▶</span>
+        </div>
+      </div>
+      <div class="sec-body" id="sb-${si}">
+        <table><thead><tr>
+          <th style="text-align:center;width:40px"></th>
+          <th>Checklist item</th><th>Status</th><th>Checked by</th><th>Time</th><th>N/A</th>
+        </tr></thead><tbody id="tb-${si}"></tbody></table>
+        <div class="add-row">
+          <input class="add-input" id="ai-${si}" placeholder="+ Add item…" maxlength="180" onkeydown="if(event.key==='Enter')addInline(${si})">
+          <button class="add-sub" onclick="addInline(${si})">Add</button>
+        </div>
+      </div>`;
+    container.appendChild(wrap);
+    const tbody = wrap.querySelector('#tb-'+si);
+    sec.items.forEach((item, ii) => {
+      const key = item.customKey || ('k_'+si+'_'+ii);
+      keyMap.push({ key, secIdx:si, itemIdx:ii, text:item.t, isNew:!!item.isNew, role:sec.role||'qa' });
+      const tr = document.createElement('tr');
+      tr.className='ri'; tr.id='row-'+key;
+      tr.innerHTML=`
+        <td style="text-align:center" onclick="toggle('${key}')">
+          <div class="cbw"><div class="cb" id="cb-${key}">
+            <svg viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
+          </div></div>
+        </td>
+        <td onclick="toggle('${key}')">
+          <span class="item-txt">${item.t}</span>${item.isNew?'<span class="ntag">NEW</span>':''}${item.custom?'<span class="ctag">CUSTOM</span>':''}
+        </td>
+        <td id="st-${key}"></td><td id="by-${key}"></td><td id="tm-${key}"></td>
+        <td><button class="na-btn" id="na-${key}" onclick="toggleNA('${key}');event.stopPropagation()">N/A</button></td>`;
+      tbody.appendChild(tr);
+    });
+  });
+  document.getElementById('s-total').textContent = total;
+  applyFilter();
+}
+function rebuildUI(){keyMap=[];total=0;buildUI();renderAllRows();updateStats();}
+
+function renderRow(key) {
+  const d=shared[key]||{};
+  const cb=document.getElementById('cb-'+key),row=document.getElementById('row-'+key);
+  const st=document.getElementById('st-'+key),by=document.getElementById('by-'+key);
+  const tm=document.getElementById('tm-'+key),na=document.getElementById('na-'+key);
+  if(!cb)return;
+  if(d.na){
+    cb.classList.remove('on');row.classList.remove('ticked');row.classList.add('faded');
+    na.classList.add('on');st.innerHTML='<span class="st-na">N/A</span>';by.innerHTML='';tm.innerHTML='';return;
+  }
+  row.classList.remove('faded');na.classList.remove('on');
+  if(d.done){
+    cb.classList.add('on');row.classList.add('ticked');
+    st.innerHTML='<span class="st-done"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#085041" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>Done</span>';
+    const r=RC(d.role);
+    by.innerHTML=`<div class="by-chip"><div class="bav" style="background:${r.bg};color:${r.color}">${(d.name||'?')[0].toUpperCase()}</div>${d.name||'—'}</div>`;
+    tm.innerHTML=`<span class="tm">${d.time||''}</span>`;
+  }else{
+    cb.classList.remove('on');row.classList.remove('ticked');
+    st.innerHTML='';by.innerHTML='';tm.innerHTML='';
+  }
+}
+function renderAllRows(){keyMap.forEach(m=>renderRow(m.key));}
+
+async function toggle(key) {
+  const d=shared[key]||{};if(d.na)return;
+  shared[key]=d.done?{done:false}:{done:true,name:authUser.name,role:authUser.role||'qa',time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})};
+  renderRow(key);updateStats();
+  const m=keyMap.find(k=>k.key===key);
+  const msg=(shared[key].done?authUser.name+' checked':authUser.name+' unchecked')+' "'+m.text.slice(0,48)+'…"';
+  const type=shared[key].done?'done':'undo';
+  logAct(msg,type);
+  const res=await apiPost({action:'saveAllState',project:projectName,state:shared});
+  if(!res){toast('⚠ Could not save');return;}
+  apiPost({action:'logActivity',project:projectName,entry:{msg,type,ts:Date.now()}});
+}
+
+async function toggleNA(key) {
+  const d=shared[key]||{};shared[key]={na:!d.na};
+  renderRow(key);updateStats();
+  const m=keyMap.find(k=>k.key===key);
+  const msg=authUser.name+' marked "'+m.text.slice(0,40)+'…" as '+(d.na?'applicable':'N/A');
+  logAct(msg,'na');
+  const res=await apiPost({action:'saveAllState',project:projectName,state:shared});
+  if(!res){toast('⚠ Could not save');return;}
+  apiPost({action:'logActivity',project:projectName,entry:{msg,type:'na',ts:Date.now()}});
+}
+
+function updateStats() {
+  const done=keyMap.filter(m=>(shared[m.key]||{}).done).length;
+  const na=keyMap.filter(m=>(shared[m.key]||{}).na).length;
+  const rem=Math.max(total-done-na,0);
+  const pct=Math.round(done/Math.max(total-na,1)*100);
+  document.getElementById('s-done').textContent=done;
+  document.getElementById('s-na').textContent=na;
+  document.getElementById('s-rem').textContent=rem;
+  document.getElementById('pfill').style.width=pct+'%';
+  document.getElementById('ppct').textContent=pct+'%';
+  sections.forEach((_,si)=>{
+    const sd=keyMap.filter(m=>m.secIdx===si&&(shared[m.key]||{}).done).length;
+    const badge=document.getElementById('sc-'+si);if(!badge)return;
+    badge.textContent=sd+'/'+sections[si].items.length;
+    badge.className='badge '+(sd===sections[si].items.length?'b-all':'b-count');
+  });
+}
+
+function toggleSec(si){
+  const b=document.getElementById('sb-'+si),c=document.getElementById('chev-'+si),h=document.getElementById('shdr-'+si);
+  if(!b)return;const open=b.classList.toggle('open');
+  c.classList.toggle('open',open);h.classList.toggle('opened',open);
+}
+function openSec(si){
+  const b=document.getElementById('sb-'+si),c=document.getElementById('chev-'+si),h=document.getElementById('shdr-'+si);
+  if(b){b.classList.add('open');c.classList.add('open');h.classList.add('opened');}
+}
+
+function setFilter(role){
+  currentFilter=role;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on','dev','server','seo','qa'));
+  const a=document.querySelector('[data-r="'+role+'"]');
+  if(a){a.classList.add('on');if(role!=='all')a.classList.add(role);}
+  applyFilter();
+}
+function applyFilter(){
+  document.querySelectorAll('.sec-wrap').forEach(sw=>{
+    sw.style.display=(currentFilter==='all'||sw.dataset.role===currentFilter)?'':'none';
+  });
+}
+
+function openAddModal(){
+  if(!projectName||!sections.length){toast('Select a project first');return;}
+  document.getElementById('adept').innerHTML=sections.map((s,i)=>`<option value="${i}">${s.dept}</option>`).join('');
+  document.getElementById('aitem').value='';
+  document.getElementById('am').classList.add('show');
+  setTimeout(()=>document.getElementById('aitem').focus(),120);
+}
+function closeAddModal(){document.getElementById('am').classList.remove('show');}
+async function submitAddItem(){
+  const di=parseInt(document.getElementById('adept').value);
+  const txt=document.getElementById('aitem').value.trim();
+  if(!txt){document.getElementById('aitem').focus();return;}
+  closeAddModal();
+  sections[di].items.push({t:txt,isNew:false,custom:true});
+  const newKey='custom_'+Date.now();shared[newKey]={};
+  rebuildUI();openSec(di);toast('Saving…');
+  const res=await apiPost({action:'saveAllState',project:projectName,state:shared});
+  if(res) apiPost({action:'logActivity',project:projectName,entry:{msg:authUser.name+' added "'+txt+'"',type:'custom',ts:Date.now()}});
+  toast(res?'✓ Item saved!':'⚠ Item added locally');
+}
+
+async function addInline(si){
+  if(!projectName){toast('Select a project first');return;}
+  const inp=document.getElementById('ai-'+si);
+  const txt=inp.value.trim();if(!txt)return;
+  sections[si].items.push({t:txt,isNew:false,custom:true});
+  const newKey='custom_'+Date.now();shared[newKey]={};
+  inp.value='';rebuildUI();openSec(si);toast('Saving…');
+  const res=await apiPost({action:'saveAllState',project:projectName,state:shared});
+  if(res) apiPost({action:'logActivity',project:projectName,entry:{msg:authUser.name+' added "'+txt+'"',type:'custom',ts:Date.now()}});
+  toast(res?'✓ Item saved!':'⚠ Item added locally');
+}
+
+function logAct(msg,type='done'){
+  activity.unshift({msg,type,ts:Date.now()});
+  if(activity.length>60)activity.pop();
+  renderActivity();
+}
+function renderActivity(){
+  const list=document.getElementById('act-list');
+  document.getElementById('act-count').textContent=activity.length+' actions';
+  if(!activity.length){list.innerHTML='<div class="aempty">No activity yet.</div>';return;}
+  list.innerHTML=activity.slice(0,20).map(a=>`
+    <div class="act-item"><div class="adot ${a.type}"></div>
+    <span>${a.msg}&nbsp;<span style="color:var(--txt3)">${ago(a.ts)}</span></span></div>`).join('');
+}
+function ago(ts){
+  const s=Math.round((Date.now()-ts)/1000);
+  if(s<60)return'just now';if(s<3600)return Math.round(s/60)+'m ago';
+  return Math.round(s/3600)+'h ago';
+}
+
+async function confirmReset(){
+  if(!projectName){toast('Select a project');return;}
+  if(!confirm('Reset ALL checkboxes for "'+projectName+'"?'))return;
+  const blankState={};
+  keyMap.forEach(m=>{const e=shared[m.key]||{};blankState[m.key]=e.na?{na:true}:{};});
+  shared=blankState;activity=[];renderAllRows();updateStats();renderActivity();
+  const res=await apiPost({action:'saveAllState',project:projectName,state:shared});
+  toast(res?'✓ Reset saved':'⚠ Reset locally');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3400);
+}
+
+init();
+</script>
+</body>
+</html>
