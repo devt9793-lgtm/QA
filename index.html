@@ -290,6 +290,8 @@ tr.ticked .item-txt{text-decoration:line-through;color:var(--txt3)}
         <span class="uname" id="top-uname">…</span>
       </div>
       <button class="tb-btn" onclick="openApiModal()" title="API Settings">⚙</button>
+      <button class="tb-btn green" id="tb-sheet" onclick="openSheet()" style="display:none">📊 Open Sheet</button>
+      <button class="tb-btn green" id="tb-dl" onclick="downloadSheet()" style="display:none">⬇ Download .xlsx</button>
       <button class="tb-btn danger" onclick="confirmReset()">↺ Reset</button>
       <button class="tb-btn danger" onclick="doLogout()">Sign out</button>
     </div>
@@ -346,6 +348,7 @@ tr.ticked .item-txt{text-decoration:line-through;color:var(--txt3)}
       <span id="sb-ind"></span>
       <button class="sb-btn" onclick="refreshProject()">↻ Refresh</button>
       <button class="sb-btn green" onclick="openSheet()">📊 Open Sheet</button>
+      <button class="sb-btn green" onclick="downloadSheet()">⬇ Download .xlsx</button>
     </div>
 
     <!-- STATS -->
@@ -563,20 +566,49 @@ async function apiGet(params) {
   setSyncState('syncing');
   const qs=new URLSearchParams(params).toString();
   const direct=API_URL+'?'+qs;
-  const proxy=`https://api.allorigins.win/raw?url=${encodeURIComponent(direct)}`;
-  const order=IS_LOCAL?[proxy,direct]:[direct,proxy];
-  for(const url of order){
+  // Always try direct first — Apps Script sets CORS * so it works from any origin
+  // Only fall back to proxy if direct fails (e.g. corporate firewall)
+  const urls=[direct, `https://api.allorigins.win/raw?url=${encodeURIComponent(direct)}`];
+  for(const url of urls){
     try{
-      const r=await fetch(url,{signal:AbortSignal.timeout(25000)});
-      if(!r.ok)continue;
-      const json=await r.json();
+      const r=await fetch(url,{signal:AbortSignal.timeout(30000)});
+      if(!r.ok) continue;
+      const text=await r.text();
+      if(!text||!text.trim()) continue;
+      let json;
+      try{ json=JSON.parse(text); }catch(e){ continue; }
+      if(json&&json.error==='Unknown action: getInit'){
+        // Backend not redeployed yet — fall back gracefully
+        setSyncState('err');
+        showApiWarn('⚠ Backend needs redeploying — paste the new QA_Backend_Script.js in Apps Script and deploy a new version.');
+        return null;
+      }
       if(json&&!json.error){setSyncState('ok');hideApiWarn();return json;}
       if(json&&json.error){setSyncState('err');toast('⚠ '+json.error);return null;}
     }catch(e){}
   }
   setSyncState('err');
-  showApiWarn('⚠ Cannot reach the QA API — check URL via ⚙');
+  showApiWarn('⚠ Cannot reach the QA API — check URL via ⚙ or redeploy your Apps Script.');
   return null;
+}
+
+async function apiPost(body) {
+  if(!isValidUrl(API_URL))return null;
+  setSyncState('syncing');
+  try{
+    const r=await fetch(API_URL,{
+      method:'POST',body:JSON.stringify(body),
+      headers:{'Content-Type':'text/plain'},
+      signal:AbortSignal.timeout(35000),
+    });
+    if(!r.ok){setSyncState('err');return null;}
+    const text=await r.text();
+    if(!text||!text.trim()){setSyncState('err');return null;}
+    let json;
+    try{ json=JSON.parse(text); }catch(e){setSyncState('err');return null;}
+    if(json&&json.error){setSyncState('err');toast('⚠ '+json.error);return null;}
+    setSyncState('ok');hideApiWarn();return json;
+  }catch(e){setSyncState('err');toast('⚠ Save failed — check connection');return null;}
 }
 
 async function apiPost(body) {
@@ -629,28 +661,39 @@ async function loadEverything() {
   if(!isValidUrl(API_URL)){
     showApiWarn('⚠ Apps Script URL not configured — click ⚙ to set it.');
     setSyncState('offline');
+    renderChips([]);
     return;
   }
 
-  // Get last project from server project list (NOT localStorage)
-  // This ensures cross-device: if you used project X on another computer
-  // it will be in the server list and auto-selected
-  const data = await apiGet({ action:'getInit', project:'' });
-  if(!data){ setSyncState('err'); return; }
+  // Try combined getInit first (fast — 1 API call)
+  let data = await apiGet({ action:'getInit', project:'' });
+
+  // If getInit not available (old backend), fall back to separate calls
+  if(!data){
+    toast('Trying fallback — fetching projects…');
+    const [masterData, listData] = await Promise.all([
+      apiGet({ action:'getMaster' }),
+      apiGet({ action:'listProjects' }),
+    ]);
+    if(!listData){ setSyncState('err'); renderChips([]); return; }
+    data = {
+      master:   masterData || { csv:'' },
+      projects: listData.projects || [],
+      project:  { found: false },
+    };
+  }
 
   // Cache master checklist
   if(data.master && data.master.csv){
     cachedMaster = parseMasterCsv(data.master.csv);
   }
 
-  // Store full project list for chip rendering + sheet lookups
+  // Store full project list
   allProjects = data.projects || [];
   renderChips(allProjects);
 
-  // Decide which project to open:
-  // 1. Last used (stored in localStorage) if it still exists on server
-  // 2. Otherwise first project in list
-  const savedLast = localStorage.getItem('qa7_last') || '';
+  // Auto-open last used project (or first in list)
+  const savedLast   = localStorage.getItem('qa7_last') || '';
   const targetProject = allProjects.find(p=>p.name===savedLast) || allProjects[0] || null;
 
   if(targetProject){
@@ -722,16 +765,13 @@ async function startProject() {
 }
 
 async function switchProject(name, sheetId) {
-  if(name===projectName&&sections.length>0)return; // already loaded
+  if(name===projectName&&sections.length>0)return;
   projectName=name;
   if(sheetId) currentSheetId=sheetId;
   else {
-    // Look up sheetId from allProjects
     const found=allProjects.find(p=>p.name===name);
     if(found) currentSheetId=found.sheetId||'';
   }
-
-  // Persist last project in localStorage (used as hint, not as source of truth)
   localStorage.setItem('qa7_last', name);
 
   // Update UI immediately
@@ -740,6 +780,8 @@ async function switchProject(name, sheetId) {
   document.getElementById('status-bar').style.display='flex';
   document.getElementById('sb-name').textContent='📋 '+name;
   document.getElementById('sb-ind').innerHTML='<span class="sb-pill sb-warn">Loading…</span>';
+  document.getElementById('tb-sheet').style.display='flex';
+  document.getElementById('tb-dl').style.display='flex';
   document.querySelectorAll('.proj-chip').forEach(c=>c.classList.toggle('active',c.dataset.proj===name));
 
   await loadProjectData(name);
@@ -820,28 +862,33 @@ function startPolling() {
 // ── Open Google Sheet for this project ──
 async function openSheet() {
   if(!projectName){toast('Select a project first');return;}
-  if(currentSheetId){
-    window.open('https://docs.google.com/spreadsheets/d/'+currentSheetId,'_blank');
-    return;
-  }
-  // Try to find sheetId from project list
-  const p=allProjects.find(x=>x.name===projectName);
-  if(p&&p.sheetId){
-    currentSheetId=p.sheetId;
-    window.open('https://docs.google.com/spreadsheets/d/'+p.sheetId,'_blank');
-    return;
-  }
-  // Last resort — fetch from server
-  const list=await apiGet({action:'listProjects'});
+  const id = await resolveSheetId();
+  if(id) window.open('https://docs.google.com/spreadsheets/d/'+id,'_blank');
+  else toast('Could not find sheet — try refreshing projects');
+}
+
+async function downloadSheet() {
+  if(!projectName){toast('Select a project first');return;}
+  const id = await resolveSheetId();
+  if(!id){toast('Could not find sheet ID');return;}
+  // Export as xlsx via Google Sheets export URL
+  window.open('https://docs.google.com/spreadsheets/d/'+id+'/export?format=xlsx&id='+id,'_blank');
+  toast('📥 Downloading Excel file…');
+}
+
+async function resolveSheetId() {
+  // Already have it
+  if(currentSheetId) return currentSheetId;
+  // Check allProjects cache
+  const p = allProjects.find(x=>x.name===projectName);
+  if(p&&p.sheetId){ currentSheetId=p.sheetId; return currentSheetId; }
+  // Fetch from server as last resort
+  const list = await apiGet({action:'listProjects'});
   if(list&&list.projects){
     const found=list.projects.find(x=>x.name===projectName);
-    if(found&&found.sheetId){
-      currentSheetId=found.sheetId;
-      window.open('https://docs.google.com/spreadsheets/d/'+found.sheetId,'_blank');
-      return;
-    }
+    if(found&&found.sheetId){ currentSheetId=found.sheetId; allProjects=list.projects; return currentSheetId; }
   }
-  toast('Could not find sheet — open Drive and look for "QA — '+projectName+'"');
+  return null;
 }
 
 // ═══════════════════════════════════════════════════════════
